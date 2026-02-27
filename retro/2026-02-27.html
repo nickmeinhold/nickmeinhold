@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint Retro: Feb 13-27, 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: { DEFAULT: '#1a1b2e', light: '#232440', lighter: '#2d2e50' },
+            accent: { blue: '#60a5fa', purple: '#a78bfa', pink: '#f472b6', green: '#34d399', orange: '#fb923c', yellow: '#fbbf24' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background: #0f1020; }
+    .glass { background: rgba(26, 27, 46, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
+    .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(96,165,250,0.1); }
+    .heatmap-cell { transition: transform 0.15s; border-radius: 6px; }
+    .heatmap-cell:hover { transform: scale(1.15); }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: '\25B6'; display: inline-block; margin-right: 8px; transition: transform 0.2s; font-size: 0.75rem; }
+    details[open] summary::before { transform: rotate(90deg); }
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f1020; }
+    ::-webkit-scrollbar-thumb { background: #2d2e50; border-radius: 4px; }
+  </style>
+</head>
+<body class="text-gray-200 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-white/5 bg-surface/50 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Sprint Retrospective
+        </h1>
+        <p class="text-sm text-gray-500 mt-0.5">Feb 13 &ndash; 27, 2026</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 bg-surface-lighter px-3 py-1.5 rounded-full">2 weeks</span>
+        <span class="text-xs text-gray-500 bg-surface-lighter px-3 py-1.5 rounded-full">6 repos</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+    <!-- Summary Stats Cards -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 fade-in">
+      <div class="stat-card glass rounded-2xl p-5">
+        <div class="text-3xl font-bold text-blue-400">30</div>
+        <div class="text-sm text-gray-400 mt-1">PRs Merged</div>
+        <div class="text-xs text-gray-600 mt-2">across 3 repos</div>
+      </div>
+      <div class="stat-card glass rounded-2xl p-5">
+        <div class="text-3xl font-bold text-purple-400">30</div>
+        <div class="text-sm text-gray-400 mt-1">Issues Closed</div>
+        <div class="text-xs text-gray-600 mt-2">+7 devlog opened</div>
+      </div>
+      <div class="stat-card glass rounded-2xl p-5">
+        <div class="text-3xl font-bold text-pink-400">6</div>
+        <div class="text-sm text-gray-400 mt-1">Repos Touched</div>
+        <div class="text-xs text-gray-600 mt-2">2 major + 4 supporting</div>
+      </div>
+      <div class="stat-card glass rounded-2xl p-5">
+        <div class="text-3xl font-bold text-green-400">7</div>
+        <div class="text-sm text-gray-400 mt-1">Devlog Posts</div>
+        <div class="text-xs text-gray-600 mt-2">adventures-in-tech-world-web</div>
+      </div>
+    </section>
+
+    <!-- Charts Row 1: Timeline + Repo Doughnut -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Daily Activity (stacked bar) -->
+      <div class="lg:col-span-2 glass rounded-2xl p-6 fade-in">
+        <h2 class="text-lg font-semibold mb-1">Daily Work Activity</h2>
+        <p class="text-xs text-gray-500 mb-4">Issues closed + PRs merged per day &middot; stacked by repository</p>
+        <div style="height: 280px;">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+      <!-- Repo Doughnut -->
+      <div class="glass rounded-2xl p-6 fade-in">
+        <h2 class="text-lg font-semibold mb-1">Work by Repository</h2>
+        <p class="text-xs text-gray-500 mb-4">Total touchpoints (PRs + issues)</p>
+        <div style="height: 280px;">
+          <canvas id="repoChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Row 2: Issue Categories + Heatmap -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Issue Categories (horizontal bar) -->
+      <div class="glass rounded-2xl p-6 fade-in">
+        <h2 class="text-lg font-semibold mb-1">Change Categories</h2>
+        <p class="text-xs text-gray-500 mb-4">Based on conventional commit prefixes</p>
+        <div style="height: 240px;">
+          <canvas id="categoriesChart"></canvas>
+        </div>
+      </div>
+      <!-- Daily Activity Heatmap -->
+      <div class="glass rounded-2xl p-6 fade-in">
+        <h2 class="text-lg font-semibold mb-1">Activity Heatmap</h2>
+        <p class="text-xs text-gray-500 mb-4">14-day grid &middot; darker = more activity (issues closed)</p>
+        <div id="heatmap" class="mt-6"></div>
+      </div>
+    </section>
+
+    <!-- Detailed Breakdown -->
+    <section class="glass rounded-2xl p-6 fade-in space-y-3">
+      <h2 class="text-lg font-semibold mb-4">Project Breakdown</h2>
+
+      <!-- tech_world -->
+      <details class="bg-surface-lighter/50 rounded-xl p-4" open>
+        <summary class="font-medium text-blue-400">
+          enspyrco/tech_world
+          <span class="text-xs text-gray-500 ml-2">21 PRs &middot; 12 issues</span>
+        </summary>
+        <div class="mt-3 space-y-1 text-sm text-gray-400">
+          <p class="text-gray-300 font-medium mb-2">Key themes: Room system, map editor, tileset infrastructure, chat &amp; bot presence, LiveKit integration</p>
+          <div class="grid gap-1">
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Map editor: save/load/delete custom maps, automapping rules, auto-barriers, filter palette by layer</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Room system, map generation, and bot agent body</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Tileset infrastructure: barrier metadata, layer filtering, animated tiles</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Player-to-player DMs with Firestore persistence</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Bot presence indicator, offline guard, chat panel</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>User profile: display name and picture upload</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>LiveKit terminal-activity events for proactive pair-programming</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Show join progress inline on room card</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Auth: configure Apple &amp; Google sign-in across all platforms</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Quick wins: editor sync, map JSON, LiveKit setup, Firestore indexes</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Chat: single overall timeout for loadHistory</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Address PR review feedback from cage match</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Progress: refresh terminal states on auth change</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Tiles: address animated tile review feedback</span></div>
+            <div class="flex items-start gap-2"><span class="text-purple-400 shrink-0">refactor</span><span>Remove unused welcome panel</span></div>
+            <div class="flex items-start gap-2"><span class="text-pink-400 shrink-0">style</span><span>Add missing blank line in BotCharacterComponent</span></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- engram -->
+      <details class="bg-surface-lighter/50 rounded-xl p-4">
+        <summary class="font-medium text-purple-400">
+          enspyrco/engram
+          <span class="text-xs text-gray-500 ml-2">7 PRs &middot; 12 issues</span>
+        </summary>
+        <div class="mt-3 space-y-1 text-sm text-gray-400">
+          <p class="text-gray-300 font-medium mb-2">Key themes: FSRS migration (SM-2 &rarr; FSRS), typed relationships, tech debt cleanup, graph visualization</p>
+          <div class="grid gap-1">
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Typed relationships with distinct graph visualization</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Document diff viewer for changed wiki pages</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Glow animation for newly ingested nodes</span></div>
+            <div class="flex items-start gap-2"><span class="text-green-400 shrink-0">feat</span><span>Extraction skill + FSRS migration ADR</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Tech debt quick wins: #12 #23 #24 #30 #17</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Tech debt sweep: #14 #15 #18 #25 #28</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Preserve team node positions across graph rebuilds</span></div>
+          </div>
+          <p class="mt-3 text-xs text-gray-500">Issues closed: FSRS Phases 2-4, bloated pubspec, wiki group cleanup, explicit opt-in discovery, DateTime migration, incremental graph sync, graph pagination, CRDT architecture</p>
+        </div>
+      </details>
+
+      <!-- containerized-claude -->
+      <details class="bg-surface-lighter/50 rounded-xl p-4">
+        <summary class="font-medium text-orange-400">
+          nickmeinhold/containerized-claude
+          <span class="text-xs text-gray-500 ml-2">0 PRs &middot; 4 issues</span>
+        </summary>
+        <div class="mt-3 space-y-1 text-sm text-gray-400">
+          <p class="text-gray-300 font-medium mb-2">Key themes: Container hardening and shell script reliability</p>
+          <div class="grid gap-1">
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>claude-config/ gitignored but required by Dockerfile COPY</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>run-single.sh sourcing .env as bash edge cases</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>tail -c 4000 may truncate mid-UTF-8 character</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>while-read subshell prevents state propagation</span></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- kanbn/kan -->
+      <details class="bg-surface-lighter/50 rounded-xl p-4">
+        <summary class="font-medium text-yellow-400">
+          kanbn/kan
+          <span class="text-xs text-gray-500 ml-2">2 PRs &middot; 0 issues</span>
+        </summary>
+        <div class="mt-3 space-y-1 text-sm text-gray-400">
+          <div class="grid gap-1">
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Allow invited users to sign up when registration is disabled</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>Add missing OpenAPI meta to checklist.update</span></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Others -->
+      <details class="bg-surface-lighter/50 rounded-xl p-4">
+        <summary class="font-medium text-gray-400">
+          Other repos
+          <span class="text-xs text-gray-500 ml-2">imagineering-matrix &middot; xdeca-pm-bot</span>
+        </summary>
+        <div class="mt-3 space-y-1 text-sm text-gray-400">
+          <div class="grid gap-1">
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>imagineering-matrix: portal-to-portal messages silently dropped</span></div>
+            <div class="flex items-start gap-2"><span class="text-blue-400 shrink-0">fix</span><span>xdeca-pm-bot: ensure reviewer PATs are reliably sourced in /ship</span></div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Themes & Takeaways -->
+    <section class="glass rounded-2xl p-6 fade-in">
+      <h2 class="text-lg font-semibold mb-4">Themes &amp; Takeaways</h2>
+      <div class="grid md:grid-cols-2 gap-6 text-sm">
+        <div>
+          <h3 class="font-medium text-blue-400 mb-2">What went well</h3>
+          <ul class="space-y-2 text-gray-400">
+            <li class="flex gap-2"><span class="text-green-400">+</span>Massive feature velocity &mdash; room system, map editor, FSRS migration all landed</li>
+            <li class="flex gap-2"><span class="text-green-400">+</span>Significant tech debt reduction in engram (5 debt issues closed)</li>
+            <li class="flex gap-2"><span class="text-green-400">+</span>Cross-project contributions: fixes landed in kan, imagineering-matrix, xdeca-pm-bot</li>
+            <li class="flex gap-2"><span class="text-green-400">+</span>7 devlog posts created for public-facing documentation</li>
+            <li class="flex gap-2"><span class="text-green-400">+</span>Container hardening for containerized-claude (4 shell script reliability fixes)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-medium text-purple-400 mb-2">Patterns &amp; observations</h3>
+          <ul class="space-y-2 text-gray-400">
+            <li class="flex gap-2"><span class="text-yellow-400">~</span>Burst pattern: quiet first week, intense second week (Feb 20-27)</li>
+            <li class="flex gap-2"><span class="text-yellow-400">~</span>Feb 22 was the biggest single day: 11 issues closed (tech_world focus day)</li>
+            <li class="flex gap-2"><span class="text-yellow-400">~</span>Bulk merge on Feb 26 &mdash; 29 PRs merged in one session</li>
+            <li class="flex gap-2"><span class="text-yellow-400">~</span>Two dominant projects: tech_world (59%) and engram (34%) of total effort</li>
+            <li class="flex gap-2"><span class="text-yellow-400">~</span>feat:fix ratio ~1.5:1 &mdash; healthy mix of new features and stabilization</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kanban Board Status -->
+    <section class="glass rounded-2xl p-6 fade-in">
+      <h2 class="text-lg font-semibold mb-4">Kanban Board Status <span class="text-xs text-gray-500 font-normal">(end of sprint)</span></h2>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-surface-lighter/50 rounded-xl p-4">
+          <h3 class="font-medium text-blue-400 mb-3">Adventures in Tech World</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-gray-500">Backlog</span><span class="text-gray-300">25</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">To Do</span><span class="text-gray-300">11</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Doing</span><span class="text-yellow-400">3</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Done</span><span class="text-green-400">22</span></div>
+          </div>
+        </div>
+        <div class="bg-surface-lighter/50 rounded-xl p-4">
+          <h3 class="font-medium text-purple-400 mb-3">Engram</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-gray-500">Backlog</span><span class="text-gray-300">10</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Next Up</span><span class="text-gray-300">2</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">In Progress</span><span class="text-yellow-400">1</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Done</span><span class="text-green-400">34</span></div>
+          </div>
+        </div>
+        <div class="bg-surface-lighter/50 rounded-xl p-4">
+          <h3 class="font-medium text-orange-400 mb-3">Matrix Chat Superbridge</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-gray-500">Backlog</span><span class="text-gray-300">6</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">In Progress</span><span class="text-yellow-400">1</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Done</span><span class="text-green-400">6</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center text-xs text-gray-600 py-6">
+      Generated Feb 27, 2026 &middot; Data sourced from GitHub API &amp; Kanban boards
+    </footer>
+  </main>
+
+  <script>
+    // ── Chart defaults ────────────────────────────────
+    Chart.defaults.color = '#9ca3af';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+
+    // ── Sprint data ──────────────────────────────────
+    const DATES = ['Feb 14','Feb 15','Feb 16','Feb 17','Feb 18','Feb 19','Feb 20','Feb 21','Feb 22','Feb 23','Feb 24','Feb 25','Feb 26','Feb 27'];
+
+    // Daily activity by repo (combined PRs merged + issues closed)
+    const dailyByRepo = {
+      'tech_world':            [0, 0, 0, 0, 0, 0,  0, 0, 10, 1, 1,  0, 21, 1],
+      'engram':                [0, 0, 0, 0, 0, 0,  1, 2,  0, 0, 0,  8,  8, 0],
+      'containerized-claude':  [0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 4,  0,  0, 0],
+      'kan':                   [0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0,  2, 0],
+      'imagineering-matrix':   [0, 0, 0, 0, 0, 0,  0, 0,  1, 0, 0,  0,  0, 0],
+      'xdeca-pm-bot':          [0, 0, 0, 0, 0, 0,  0, 0,  0, 1, 0,  0,  0, 0],
+      'adventures-web':        [0, 0, 0, 0, 0, 0,  0, 0,  0, 0, 0,  0,  0, 7],
+    };
+
+    const REPO_COLORS = {
+      'tech_world':           { bg: 'rgba(96,165,250,0.7)',  border: '#60a5fa' },
+      'engram':               { bg: 'rgba(167,139,250,0.7)', border: '#a78bfa' },
+      'containerized-claude': { bg: 'rgba(251,146,60,0.7)',  border: '#fb923c' },
+      'kan':                  { bg: 'rgba(251,191,36,0.7)',  border: '#fbbf24' },
+      'imagineering-matrix':  { bg: 'rgba(244,114,182,0.7)', border: '#f472b6' },
+      'xdeca-pm-bot':         { bg: 'rgba(52,211,153,0.7)',  border: '#34d399' },
+      'adventures-web':       { bg: 'rgba(148,163,184,0.6)', border: '#94a3b8' },
+    };
+
+    // ── 1. Daily Activity Stacked Bar Chart ──────────
+    const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+    new Chart(timelineCtx, {
+      type: 'bar',
+      data: {
+        labels: DATES,
+        datasets: Object.entries(dailyByRepo).map(([repo, data]) => ({
+          label: repo,
+          data: data,
+          backgroundColor: REPO_COLORS[repo].bg,
+          borderColor: REPO_COLORS[repo].border,
+          borderWidth: 1,
+          borderRadius: 3,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
+          },
+          tooltip: {
+            backgroundColor: '#1a1b2e',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            callbacks: {
+              footer: (items) => {
+                const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                return `Total: ${total}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: { display: true, text: 'Work items', font: { size: 11 } },
+            ticks: { stepSize: 5 }
+          }
+        }
+      }
+    });
+
+    // ── 2. Work by Repository Doughnut ───────────────
+    const repoCounts = {
+      'tech_world': 33,
+      'engram': 19,
+      'containerized-claude': 4,
+      'kan': 2,
+      'imagineering-matrix': 1,
+      'xdeca-pm-bot': 1,
+    };
+
+    const repoCtx = document.getElementById('repoChart').getContext('2d');
+    new Chart(repoCtx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(repoCounts),
+        datasets: [{
+          data: Object.values(repoCounts),
+          backgroundColor: Object.keys(repoCounts).map(r => REPO_COLORS[r].bg),
+          borderColor: Object.keys(repoCounts).map(r => REPO_COLORS[r].border),
+          borderWidth: 1.5,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 10, padding: 8, font: { size: 10 } }
+          },
+          tooltip: {
+            backgroundColor: '#1a1b2e',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            callbacks: {
+              label: (ctx) => {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = ((ctx.parsed / total) * 100).toFixed(0);
+                return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // ── 3. Change Categories Horizontal Bar ──────────
+    const categories = {
+      'Features (feat)': 16,
+      'Bug Fixes (fix)': 11,
+      'Refactoring': 1,
+      'Style': 1,
+      'Other': 1,
+    };
+    const catColors = ['#34d399','#60a5fa','#a78bfa','#f472b6','#94a3b8'];
+
+    const catCtx = document.getElementById('categoriesChart').getContext('2d');
+    new Chart(catCtx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(categories),
+        datasets: [{
+          data: Object.values(categories),
+          backgroundColor: catColors.map(c => c + 'b3'),
+          borderColor: catColors,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          barThickness: 28,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1b2e',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            title: { display: true, text: 'PR count', font: { size: 11 } },
+            ticks: { stepSize: 4 }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+          }
+        }
+      }
+    });
+
+    // ── 4. Heatmap (custom HTML/CSS) ─────────────────
+    const heatmapData = [
+      { date: 'Feb 14', day: 'Sat', count: 0 },
+      { date: 'Feb 15', day: 'Sun', count: 0 },
+      { date: 'Feb 16', day: 'Mon', count: 0 },
+      { date: 'Feb 17', day: 'Tue', count: 0 },
+      { date: 'Feb 18', day: 'Wed', count: 0 },
+      { date: 'Feb 19', day: 'Thu', count: 0 },
+      { date: 'Feb 20', day: 'Fri', count: 1 },
+      { date: 'Feb 21', day: 'Sat', count: 2 },
+      { date: 'Feb 22', day: 'Sun', count: 11 },
+      { date: 'Feb 23', day: 'Mon', count: 2 },
+      { date: 'Feb 24', day: 'Tue', count: 5 },
+      { date: 'Feb 25', day: 'Wed', count: 8 },
+      { date: 'Feb 26', day: 'Thu', count: 30 },
+      { date: 'Feb 27', day: 'Fri', count: 8 },
+    ];
+
+    const maxCount = Math.max(...heatmapData.map(d => d.count));
+    const heatmapEl = document.getElementById('heatmap');
+
+    // Week labels row
+    const weeksHtml = `
+      <div style="display:grid; grid-template-columns: 50px repeat(7, 1fr); gap: 6px; margin-bottom: 4px;">
+        <div></div>
+        ${['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].map(d =>
+          `<div class="text-center text-xs text-gray-600">${d}</div>`
+        ).join('')}
+      </div>
+    `;
+
+    // Split into 2 weeks
+    const week1 = heatmapData.slice(0, 7);
+    const week2 = heatmapData.slice(7, 14);
+
+    function renderWeek(weekData, label) {
+      return `
+        <div style="display:grid; grid-template-columns: 50px repeat(7, 1fr); gap: 6px; margin-bottom: 6px;">
+          <div class="text-xs text-gray-600 flex items-center">${label}</div>
+          ${weekData.map(d => {
+            const intensity = d.count === 0 ? 0 : Math.max(0.15, d.count / maxCount);
+            const bg = d.count === 0
+              ? 'rgba(255,255,255,0.03)'
+              : `rgba(96, 165, 250, ${intensity})`;
+            return `
+              <div class="heatmap-cell flex flex-col items-center justify-center py-3"
+                   style="background: ${bg};"
+                   title="${d.date}: ${d.count} items">
+                <span class="text-xs font-medium ${d.count > 0 ? 'text-white' : 'text-gray-600'}">${d.count || ''}</span>
+                <span class="text-[10px] text-gray-500 mt-0.5">${d.date.split(' ')[1]}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    heatmapEl.innerHTML = weeksHtml + renderWeek(week1, 'Wk 1') + renderWeek(week2, 'Wk 2');
+  </script>
+
+</body>
+</html>
