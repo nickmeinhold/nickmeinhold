@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>No Thanks!</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Setup Screen -->
+  <div id="setup-screen" class="screen">
+    <h1>No Thanks!</h1>
+    <p class="subtitle">The card game of tough decisions</p>
+    <div class="setup-form">
+      <label for="player-count">Number of Players</label>
+      <div class="player-count-selector">
+        <button class="count-btn" data-count="3">3</button>
+        <button class="count-btn selected" data-count="4">4</button>
+        <button class="count-btn" data-count="5">5</button>
+        <button class="count-btn" data-count="6">6</button>
+        <button class="count-btn" data-count="7">7</button>
+      </div>
+      <div id="player-names"></div>
+      <button id="start-btn" class="primary-btn">Start Game</button>
+    </div>
+    <details class="rules">
+      <summary>How to Play</summary>
+      <ul>
+        <li>Cards numbered 3–35 are shuffled; 9 are removed unseen.</li>
+        <li>Each player starts with 11 chips.</li>
+        <li>On your turn: <strong>take the card</strong> (and all chips on it), or <strong>pay a chip</strong> to pass.</li>
+        <li>If you have no chips, you must take the card.</li>
+        <li>Runs of consecutive cards only count the lowest value.</li>
+        <li>Score = card values − chips. <strong>Lowest score wins!</strong></li>
+      </ul>
+    </details>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen hidden">
+    <header>
+      <h2 id="turn-indicator"></h2>
+      <div id="deck-count"></div>
+    </header>
+
+    <div id="card-area">
+      <div id="current-card">
+        <span id="card-value"></span>
+      </div>
+      <div id="chips-on-card">
+        <span id="chip-count">0</span> chip<span id="chip-plural">s</span> on card
+      </div>
+    </div>
+
+    <div id="action-area">
+      <button id="take-btn" class="action-btn take">Take Card</button>
+      <button id="pass-btn" class="action-btn pass">No Thanks!</button>
+    </div>
+
+    <div id="players-area"></div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="screen hidden">
+    <h1>Game Over!</h1>
+    <div id="final-scores"></div>
+    <button id="play-again-btn" class="primary-btn">Play Again</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
